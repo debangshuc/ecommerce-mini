@@ -1,0 +1,47 @@
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="190"
+  height="44"
+  viewBox="0 0 190 44"
+  fill="none"
+>
+  <!-- Shopping bag icon -->
+  <rect
+    x="2"
+    y="5"
+    width="34"
+    height="34"
+    rx="9"
+    fill="#8062D6"
+  />
+
+  <!-- Bag body -->
+  <path
+    d="M10 16H28L30 32H8L10 16Z"
+    fill="#FFFFFF"
+  />
+
+  <!-- Bag handle -->
+  <path
+    d="M14 16V12.5C14 9.5 16.2 7.5 19 7.5C21.8 7.5 24 9.5 24 12.5V16"
+    stroke="#FFFFFF"
+    stroke-width="2.2"
+    stroke-linecap="round"
+  />
+
+  <!-- Orange accent -->
+  <circle cx="30" cy="8" r="4" fill="#FFAD70"/>
+
+  <!-- Brand name -->
+  <text
+    x="43"
+    y="29"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="22"
+    font-weight="bold"
+    letter-spacing="-0.7"
+  >
+    <tspan fill="#292735">Campus</tspan><tspan fill="#8062D6">Cart</tspan>
+  </text>
+</svg>
