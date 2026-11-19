@@ -5,8 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Mail } from "lucide-react";
+import { GraduationCap, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { isCollegeEmail } from "@/lib/student";
 import { loginSchema, type LoginValues } from "@/lib/validation";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/Button";
@@ -22,11 +23,16 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", remember: true },
   });
+
+  const emailValue = watch("email") ?? "";
+  const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim());
+  const collegeEmail = looksLikeEmail && isCollegeEmail(emailValue);
 
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
@@ -52,15 +58,23 @@ export default function LoginPage() {
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-        <Input
-          label="Email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@college.edu"
-          leftIcon={<Mail size={18} />}
-          error={errors.email?.message}
-          {...register("email")}
-        />
+        <div>
+          <Input
+            label="Email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@college.edu"
+            leftIcon={<Mail size={18} />}
+            error={errors.email?.message}
+            {...register("email")}
+          />
+          {collegeEmail && !errors.email && (
+            <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-mint-600">
+              <GraduationCap size={16} /> College email detected: student prices
+              will be unlocked.
+            </p>
+          )}
+        </div>
 
         <PasswordInput
           label="Password"
@@ -107,7 +121,8 @@ export default function LoginPage() {
 
       <p className="mt-6 rounded-2xl bg-lavender-50 px-4 py-3 text-xs text-ink-soft">
         Demo login: use any valid email and any password with 6 or more
-        characters.
+        characters. Try <strong>riya@iitb.ac.in</strong> for student prices and{" "}
+        <strong>riya@gmail.com</strong> for regular prices.
       </p>
     </AuthShell>
   );

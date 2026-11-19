@@ -1,7 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import type { CartItem as CartLine } from "@/types/cart";
 import { FREE_DELIVERY_THRESHOLD } from "@/lib/constants";
-import { formatPrice, getUnitPrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { usePricing } from "@/hooks/usePricing";
 import { ProductImage } from "@/components/product/ProductImage";
 
 interface OrderSummaryProps {
@@ -9,6 +12,7 @@ interface OrderSummaryProps {
   deliveryCharge: number;
   total: number;
   itemCount: number;
+  savings?: number;
   items?: CartLine[];
   children?: ReactNode;
 }
@@ -18,9 +22,11 @@ export function OrderSummary({
   deliveryCharge,
   total,
   itemCount,
+  savings = 0,
   items,
   children,
 }: OrderSummaryProps) {
+  const { getUnit } = usePricing();
   const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
   const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
 
@@ -43,7 +49,7 @@ export function OrderSummary({
                 <p className="text-xs text-ink-muted">Qty {quantity}</p>
               </div>
               <p className="text-sm font-semibold">
-                {formatPrice(getUnitPrice(product) * quantity)}
+                {formatPrice(getUnit(product) * quantity)}
               </p>
             </li>
           ))}
@@ -57,6 +63,12 @@ export function OrderSummary({
           </dt>
           <dd className="font-semibold">{formatPrice(subtotal)}</dd>
         </div>
+        {savings > 0 && (
+          <div className="flex justify-between rounded-xl bg-mint-100 px-3 py-2">
+            <dt className="font-medium text-mint-600">Student discount applied</dt>
+            <dd className="font-bold text-mint-600">−{formatPrice(savings)}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt className="text-ink-soft">Delivery</dt>
           <dd className="font-semibold">

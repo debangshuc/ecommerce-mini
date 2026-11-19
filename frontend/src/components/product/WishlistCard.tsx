@@ -8,8 +8,8 @@ import { getCategoryName } from "@/data/categories";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/Button";
-import { PriceDisplay } from "@/components/ui/PriceDisplay";
 import { ProductImage } from "@/components/product/ProductImage";
+import { ProductPrice } from "@/components/product/ProductPrice";
 
 export function WishlistCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
@@ -48,11 +48,7 @@ export function WishlistCard({ product }: { product: Product }) {
         >
           {product.name}
         </Link>
-        <PriceDisplay
-          price={product.price}
-          discountedPrice={product.discountedPrice}
-          showPercent
-        />
+        <ProductPrice product={product} showPercent />
         {outOfStock && (
           <p className="text-xs font-semibold text-peach-600">Currently out of stock</p>
         )}

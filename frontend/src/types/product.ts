@@ -2,8 +2,8 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
-  discountedPrice?: number;
+  price: number; // regular price
+  discountedPrice?: number; // student price (college-email users only)
   category: string; // matches Category.slug
   image: string;
   images?: string[]; // extra gallery images (optional)
@@ -25,6 +25,7 @@ export interface Category {
 }
 
 export type SortOption =
+  | "recommended"
   | "popularity"
   | "price-asc"
   | "price-desc"

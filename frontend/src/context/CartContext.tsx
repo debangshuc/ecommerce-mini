@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { calculateDelivery, getUnitPrice } from "@/lib/utils";
 import type { CartItem } from "@/types/cart";
@@ -18,6 +19,8 @@ interface CartContextValue {
   items: CartItem[];
   totalItems: number;
   subtotal: number;
+  /** how much the student discount saved on this cart (0 for regular users) */
+  savings: number;
   deliveryCharge: number;
   total: number;
   isHydrated: boolean;
@@ -43,10 +46,10 @@ function isValidCartItem(value: unknown): value is CartItem {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { isStudent } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load the saved cart once, after the first render in the browser.
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEYS.cart);
@@ -62,7 +65,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, []);
 
-  // Save the cart whenever it changes (only after the first load).
   useEffect(() => {
     if (!isHydrated) return;
     try {
@@ -118,7 +120,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = items.reduce(
-      (sum, item) => sum + getUnitPrice(item.product) * item.quantity,
+      (sum, item) => sum + getUnitPrice(item.product, isStudent) * item.quantity,
+      0
+    );
+    const savings = items.reduce(
+      (sum, item) =>
+        sum +
+        (item.product.price - getUnitPrice(item.product, isStudent)) *
+          item.quantity,
       0
     );
     const deliveryCharge = calculateDelivery(subtotal);
@@ -126,6 +135,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       totalItems,
       subtotal,
+      savings,
       deliveryCharge,
       total: subtotal + deliveryCharge,
       isHydrated,
@@ -137,6 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
   }, [
     items,
+    isStudent,
     isHydrated,
     addToCart,
     removeFromCart,

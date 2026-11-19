@@ -6,10 +6,10 @@ import { Check, ShoppingCart, Star } from "lucide-react";
 import type { Product } from "@/types/product";
 import { getCategoryName } from "@/data/categories";
 import { useCart } from "@/context/CartContext";
-import { getDiscountPercent } from "@/lib/utils";
+import { usePricing } from "@/hooks/usePricing";
 import { Button } from "@/components/ui/Button";
-import { PriceDisplay } from "@/components/ui/PriceDisplay";
 import { ProductImage } from "@/components/product/ProductImage";
+import { ProductPrice } from "@/components/product/ProductPrice";
 import { WishlistButton } from "@/components/product/WishlistButton";
 
 interface ProductCardProps {
@@ -18,6 +18,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { getInfo } = usePricing();
   const [added, setAdded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -29,7 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const outOfStock = product.stock <= 0;
   const lowStock = product.stock > 0 && product.stock <= 5;
-  const discount = getDiscountPercent(product.price, product.discountedPrice);
+  const info = getInfo(product);
 
   const handleAddToCart = () => {
     addToCart(product, 1);
@@ -54,9 +55,9 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {discount > 0 && !outOfStock && (
-          <span className="absolute left-3 top-3 rounded-full bg-peach-500 px-2.5 py-1 text-xs font-bold text-white">
-            {discount}% OFF
+        {info.hasDiscount && !outOfStock && (
+          <span className="absolute left-3 top-3 rounded-full bg-mint-500 px-2.5 py-1 text-xs font-bold text-white">
+            Student {info.percent}% OFF
           </span>
         )}
 
@@ -105,11 +106,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
 
         <div className="mt-auto space-y-3 pt-2">
-          <PriceDisplay
-            price={product.price}
-            discountedPrice={product.discountedPrice}
-            size="md"
-          />
+          <ProductPrice product={product} size="md" />
           <Button
             size="sm"
             fullWidth

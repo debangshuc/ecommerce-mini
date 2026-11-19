@@ -1,4 +1,5 @@
 import { DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD } from "./constants";
+import { getPriceInfo } from "./student";
 import type { Product } from "@/types/product";
 
 /** Joins class names, ignoring falsy values. Usage: cn("a", cond && "b") */
@@ -26,12 +27,12 @@ export function getDiscountPercent(
   return Math.round(((price - discountedPrice) / price) * 100);
 }
 
-/** The price the customer actually pays for one unit. */
-export function getUnitPrice(product: Product): number {
-  return product.discountedPrice !== undefined &&
-    product.discountedPrice < product.price
-    ? product.discountedPrice
-    : product.price;
+/**
+ * The price one unit costs the customer.
+ * Students (college email) get the student price; everyone else pays price.
+ */
+export function getUnitPrice(product: Product, isStudent = false): number {
+  return getPriceInfo(product, isStudent).current;
 }
 
 /** Delivery is free above the threshold; empty cart has no delivery fee. */

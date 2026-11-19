@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  LISTING_CATEGORY_SLUGS,
+  LISTING_CONDITIONS,
+} from "@/types/marketplace";
 
 const phone = z
   .string()
@@ -35,6 +39,7 @@ export const signupSchema = z
   .object({
     fullName,
     email,
+    phone,
     password: z
       .string()
       .min(8, "Use at least 8 characters")
@@ -74,8 +79,29 @@ export const profileSchema = z.object({
   college: z.string().trim().max(80, "College name is too long"),
 });
 
+export const listingSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, "Give your listing a clear title")
+    .max(80, "Title is too long"),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describe the item in at least 10 characters")
+    .max(500, "Description is too long"),
+  price: z
+    .string()
+    .trim()
+    .regex(/^\d{1,6}$/, "Enter a whole-number price in ₹")
+    .refine((value) => Number(value) > 0, "Price must be more than ₹0"),
+  category: z.enum(LISTING_CATEGORY_SLUGS),
+  condition: z.enum(LISTING_CONDITIONS),
+});
+
 export type LoginValues = z.infer<typeof loginSchema>;
 export type SignupValues = z.infer<typeof signupSchema>;
 export type CheckoutValues = z.infer<typeof checkoutSchema>;
 export type AddressValues = z.infer<typeof addressSchema>;
 export type ProfileValues = z.infer<typeof profileSchema>;
+export type ListingValues = z.infer<typeof listingSchema>;

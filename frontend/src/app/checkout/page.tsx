@@ -40,9 +40,17 @@ const PAYMENT_OPTIONS: {
 ];
 
 export default function CheckoutPage() {
-  const { items, totalItems, subtotal, deliveryCharge, total, clearCart, isHydrated } =
-    useCart();
-  const { user } = useAuth();
+  const {
+    items,
+    totalItems,
+    subtotal,
+    savings,
+    deliveryCharge,
+    total,
+    clearCart,
+    isHydrated,
+  } = useCart();
+  const { user, isStudent } = useAuth();
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [deliveryEstimate, setDeliveryEstimate] = useState("");
   const prefilled = useRef(false);
@@ -101,7 +109,7 @@ export default function CheckoutPage() {
         productId: product.id,
         name: product.name,
         image: product.image,
-        price: getUnitPrice(product),
+        price: getUnitPrice(product, isStudent),
         quantity,
       })),
       subtotal,
@@ -175,7 +183,7 @@ export default function CheckoutPage() {
             <Button href="/orders" size="lg">
               View My Orders
             </Button>
-            <Button href="/shop" size="lg" variant="outline">
+            <Button href="/" size="lg" variant="outline">
               Continue Shopping
             </Button>
           </div>
@@ -193,7 +201,7 @@ export default function CheckoutPage() {
           title="Nothing to check out"
           description="Add a few items to your cart before checking out."
           actionLabel="Browse Products"
-          actionHref="/shop"
+          actionHref="/"
         />
       </div>
     );
@@ -332,6 +340,7 @@ export default function CheckoutPage() {
           <OrderSummary
             items={items}
             subtotal={subtotal}
+            savings={savings}
             deliveryCharge={deliveryCharge}
             total={total}
             itemCount={totalItems}

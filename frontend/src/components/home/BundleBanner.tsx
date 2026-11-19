@@ -2,18 +2,23 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProductImage } from "@/components/product/ProductImage";
+import { ProductPrice } from "@/components/product/ProductPrice";
 import { getProductsByIds } from "@/services/productService";
-import { formatPrice, getDiscountPercent, getUnitPrice } from "@/lib/utils";
+import { getPriceInfo } from "@/lib/student";
+import { formatPrice } from "@/lib/utils";
 
 export function BundleBanner() {
   const kits = getProductsByIds(["24", "25"]);
   if (kits.length === 0) return null;
 
-  const bestSaving = Math.max(
+  // Regular (non-student) starting price for the banner copy.
+  const lowestRegularPrice = Math.min(...kits.map((kit) => kit.price));
+
+  // Biggest discount a student gets on these kits.
+  const bestStudentSaving = Math.max(
     0,
-    ...kits.map((kit) => getDiscountPercent(kit.price, kit.discountedPrice))
+    ...kits.map((kit) => getPriceInfo(kit, true).percent)
   );
-  const lowestPrice = Math.min(...kits.map(getUnitPrice));
 
   return (
     <section className="container-page py-8">
@@ -26,8 +31,14 @@ export function BundleBanner() {
             Start the semester with everything in one box.
           </h2>
           <p className="mt-4 max-w-md text-lavender-100">
-            Hand-picked kits for freshers and hostel life, from {formatPrice(lowestPrice)}
-            {bestSaving > 0 && <> and save up to {bestSaving}%</>}.
+            Hand-picked kits for freshers and hostel life, from{" "}
+            {formatPrice(lowestRegularPrice)}.
+            {bestStudentSaving > 0 && (
+              <>
+                {" "}
+                Students save up to {bestStudentSaving}% with a college email.
+              </>
+            )}
           </p>
           <Button
             href="/shop?category=student-kits"
@@ -55,14 +66,7 @@ export function BundleBanner() {
               />
               <div className="min-w-0">
                 <p className="line-clamp-2 text-sm font-semibold">{kit.name}</p>
-                <p className="mt-1 text-lg font-bold text-lavender-700">
-                  {formatPrice(getUnitPrice(kit))}
-                  {kit.discountedPrice !== undefined && (
-                    <span className="ml-2 text-sm font-medium text-ink-muted line-through">
-                      {formatPrice(kit.price)}
-                    </span>
-                  )}
-                </p>
+                <ProductPrice product={kit} size="md" className="mt-1" />
               </div>
             </Link>
           ))}

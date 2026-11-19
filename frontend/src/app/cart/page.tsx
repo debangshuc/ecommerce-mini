@@ -9,8 +9,16 @@ import { CartItem } from "@/components/cart/CartItem";
 import { OrderSummary } from "@/components/cart/OrderSummary";
 
 export default function CartPage() {
-  const { items, totalItems, subtotal, deliveryCharge, total, isHydrated, clearCart } =
-    useCart();
+  const {
+    items,
+    totalItems,
+    subtotal,
+    savings,
+    deliveryCharge,
+    total,
+    isHydrated,
+    clearCart,
+  } = useCart();
 
   if (!isHydrated) {
     return (
@@ -28,7 +36,7 @@ export default function CartPage() {
           title="Your cart is empty"
           description="Looks like you haven't added anything yet. Let's find some stationery for your semester."
           actionLabel="Start Shopping"
-          actionHref="/shop"
+          actionHref="/"
         />
       </div>
     );
@@ -63,6 +71,7 @@ export default function CartPage() {
         <div className="lg:sticky lg:top-24 lg:self-start">
           <OrderSummary
             subtotal={subtotal}
+            savings={savings}
             deliveryCharge={deliveryCharge}
             total={total}
             itemCount={totalItems}
@@ -75,7 +84,7 @@ export default function CartPage() {
             >
               Proceed to Checkout
             </Button>
-            <Button href="/shop" variant="outline" fullWidth>
+            <Button href="/" variant="outline" fullWidth>
               Continue Shopping
             </Button>
           </OrderSummary>

@@ -15,6 +15,8 @@ export interface User {
   fullName: string;
   email: string;
   phone: string;
+  phoneVerified?: boolean;
   college?: string;
+  interests: string[]; // ids from data/interests.ts
   addresses: Address[];
 }

@@ -5,14 +5,16 @@ import { Trash2 } from "lucide-react";
 import type { CartItem as CartLine } from "@/types/cart";
 import { getCategoryName } from "@/data/categories";
 import { useCart } from "@/context/CartContext";
-import { formatPrice, getUnitPrice } from "@/lib/utils";
+import { usePricing } from "@/hooks/usePricing";
+import { formatPrice } from "@/lib/utils";
 import { QuantitySelector } from "@/components/ui/QuantitySelector";
 import { ProductImage } from "@/components/product/ProductImage";
 
 export function CartItem({ item }: { item: CartLine }) {
   const { updateQuantity, removeFromCart } = useCart();
+  const { getInfo } = usePricing();
   const { product, quantity } = item;
-  const unitPrice = getUnitPrice(product);
+  const info = getInfo(product);
 
   return (
     <li className="flex gap-4 py-5 sm:gap-6">
@@ -38,7 +40,18 @@ export function CartItem({ item }: { item: CartLine }) {
               {product.name}
             </Link>
             <p className="mt-1 text-sm text-ink-soft">
-              {formatPrice(unitPrice)} each
+              {formatPrice(info.current)}
+              {info.hasDiscount && (
+                <span className="ml-2 text-ink-muted line-through">
+                  {formatPrice(info.original)}
+                </span>
+              )}{" "}
+              each
+              {info.hasDiscount && (
+                <span className="ml-2 font-semibold text-mint-600">
+                  Student {info.percent}% off
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -59,7 +72,7 @@ export function CartItem({ item }: { item: CartLine }) {
             max={product.stock}
             onChange={(value) => updateQuantity(product.id, value)}
           />
-          <p className="text-lg font-bold">{formatPrice(unitPrice * quantity)}</p>
+          <p className="text-lg font-bold">{formatPrice(info.current * quantity)}</p>
         </div>
       </div>
     </li>

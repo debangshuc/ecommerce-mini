@@ -5,7 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LogOut, MapPin, Pencil, Plus, Star, Trash2, User as UserIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  GraduationCap,
+  LogOut,
+  MapPin,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  User as UserIcon,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { INDIAN_STATES } from "@/lib/india";
 import {
@@ -19,6 +29,7 @@ import type { User } from "@/types/user";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
+import { InterestPicker } from "@/components/ui/InterestPicker";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 
@@ -150,6 +161,59 @@ function AddressForm({ user, onDone }: { user: User; onDone: () => void }) {
   );
 }
 
+/* ---------- Interests (editable) ---------- */
+function InterestsSection({ user }: { user: User }) {
+  const { updateInterests } = useAuth();
+  const [draft, setDraft] = useState<string[]>(user.interests);
+  const [saved, setSaved] = useState(false);
+
+  const changed =
+    draft.length !== user.interests.length ||
+    draft.some((id) => !user.interests.includes(id));
+
+  const handleChange = (next: string[]) => {
+    setDraft(next);
+    setSaved(false);
+  };
+
+  const handleSave = () => {
+    updateInterests(draft);
+    setSaved(true);
+  };
+
+  return (
+    <section
+      id="interests"
+      className="scroll-mt-24 rounded-3xl border border-line bg-white p-6 shadow-soft lg:col-span-2"
+    >
+      <h2 className="font-sans text-lg font-bold">Your interests</h2>
+      <p className="mt-1 text-sm text-ink-soft">
+        We use these to recommend products and Buy &amp; Sell listings for you.
+      </p>
+
+      <div className="mt-5">
+        <InterestPicker
+          selected={draft}
+          onChange={handleChange}
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+        />
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <Button onClick={handleSave} disabled={!changed}>
+          Save interests
+        </Button>
+        <span className="text-sm text-ink-muted">{draft.length} selected</span>
+        {saved && (
+          <span role="status" className="text-sm font-semibold text-mint-600">
+            Interests saved
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Small on/off switch ---------- */
 function Toggle({
   label,
@@ -193,7 +257,8 @@ function Toggle({
 /* ---------- Page ---------- */
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isHydrated, logout, removeAddress, setDefaultAddress } = useAuth();
+  const { user, isHydrated, isStudent, logout, removeAddress, setDefaultAddress } =
+    useAuth();
   const [editing, setEditing] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
   const [settings, setSettings] = useState({
@@ -249,6 +314,19 @@ export default function ProfilePage() {
           <div>
             <h1 className="text-3xl font-bold">{user.fullName}</h1>
             <p className="text-ink-soft">{user.email}</p>
+            <span
+              className={cn(
+                "mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+                isStudent
+                  ? "bg-mint-100 text-mint-600"
+                  : "bg-peach-100 text-peach-600"
+              )}
+            >
+              <GraduationCap size={14} />
+              {isStudent
+                ? "Student pricing active"
+                : "Regular pricing · use a college email for student prices"}
+            </span>
           </div>
         </div>
         <div className="flex gap-3">
@@ -288,17 +366,31 @@ export default function ProfilePage() {
             </div>
           ) : (
             <dl className="mt-5 divide-y divide-line text-sm">
-              {[
-                { label: "Full name", value: user.fullName },
-                { label: "Email", value: user.email },
-                { label: "Contact number", value: user.phone || "Not added yet" },
-                { label: "College", value: user.college || "Not added yet" },
-              ].map((row) => (
-                <div key={row.label} className="flex justify-between gap-4 py-3">
-                  <dt className="text-ink-muted">{row.label}</dt>
-                  <dd className="text-right font-semibold">{row.value}</dd>
-                </div>
-              ))}
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Full name</dt>
+                <dd className="text-right font-semibold">{user.fullName}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Email</dt>
+                <dd className="text-right font-semibold">{user.email}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Contact number</dt>
+                <dd className="flex items-center gap-2 text-right font-semibold">
+                  {user.phone || "Not added yet"}
+                  {user.phone && user.phoneVerified && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-mint-100 px-2 py-0.5 text-xs font-bold text-mint-600">
+                      <BadgeCheck size={12} /> Verified
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">College</dt>
+                <dd className="text-right font-semibold">
+                  {user.college || "Not added yet"}
+                </dd>
+              </div>
             </dl>
           )}
         </section>
@@ -331,6 +423,9 @@ export default function ProfilePage() {
           </p>
         </section>
 
+        {/* Interests */}
+        <InterestsSection key={user.id} user={user} />
+
         {/* Addresses */}
         <section className="rounded-3xl border border-line bg-white p-6 shadow-soft lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -354,7 +449,7 @@ export default function ProfilePage() {
           {user.addresses.length === 0 && !addingAddress ? (
             <p className="mt-5 rounded-2xl bg-lavender-50 p-5 text-sm text-ink-soft">
               No saved addresses yet. Add one to speed up checkout, or{" "}
-              <Link href="/shop" className="font-semibold text-lavender-700 underline">
+              <Link href="/" className="font-semibold text-lavender-700 underline">
                 keep shopping
               </Link>
               .

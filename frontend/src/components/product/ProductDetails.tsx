@@ -2,21 +2,32 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Check, Heart, RotateCcw, ShoppingCart, Star, Truck } from "lucide-react";
+import {
+  Check,
+  GraduationCap,
+  Heart,
+  RotateCcw,
+  ShoppingCart,
+  Star,
+  Truck,
+} from "lucide-react";
 import type { Product } from "@/types/product";
 import { getCategoryName } from "@/data/categories";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { usePricing } from "@/hooks/usePricing";
 import { FREE_DELIVERY_THRESHOLD } from "@/lib/constants";
+import { getPriceInfo } from "@/lib/student";
 import { cn, formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { PriceDisplay } from "@/components/ui/PriceDisplay";
 import { QuantitySelector } from "@/components/ui/QuantitySelector";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductPrice } from "@/components/product/ProductPrice";
 
 export function ProductDetails({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist, isHydrated } = useWishlist();
+  const { isStudent } = usePricing();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,6 +42,7 @@ export function ProductDetails({ product }: { product: Product }) {
   const outOfStock = product.stock <= 0;
   const lowStock = product.stock > 0 && product.stock <= 5;
   const wished = isHydrated && isInWishlist(product.id);
+  const studentInfo = getPriceInfo(product, true);
 
   const handleAdd = () => {
     addToCart(product, quantity);
@@ -55,7 +67,7 @@ export function ProductDetails({ product }: { product: Product }) {
 
       <div>
         <Link
-          href={`/shop?category=${product.category}`}
+          href={`/?category=${product.category}#shop`}
           className="text-xs font-bold uppercase tracking-widest text-lavender-600 hover:underline"
         >
           {getCategoryName(product.category)}
@@ -74,14 +86,35 @@ export function ProductDetails({ product }: { product: Product }) {
           </div>
         )}
 
-        <PriceDisplay
+        <ProductPrice
           className="mt-5"
-          price={product.price}
-          discountedPrice={product.discountedPrice}
+          product={product}
           size="lg"
           showPercent
+          showLabel
         />
         <p className="mt-1 text-xs text-ink-muted">Inclusive of all taxes</p>
+
+        {!isStudent && studentInfo.hasDiscount && (
+          <div className="mt-4 flex items-start gap-3 rounded-2xl bg-lavender-50 p-4 text-sm text-ink-soft">
+            <GraduationCap size={20} className="mt-0.5 shrink-0 text-lavender-600" />
+            <p>
+              Students pay{" "}
+              <strong className="text-lavender-700">
+                {formatPrice(studentInfo.current)}
+              </strong>{" "}
+              ({studentInfo.percent}% off).{" "}
+              <Link href="/signup" className="font-semibold text-lavender-700 underline">
+                Sign up
+              </Link>{" "}
+              or{" "}
+              <Link href="/login" className="font-semibold text-lavender-700 underline">
+                log in
+              </Link>{" "}
+              with your college email.
+            </p>
+          </div>
+        )}
 
         <p className="mt-6 leading-relaxed text-ink-soft">{product.description}</p>
 

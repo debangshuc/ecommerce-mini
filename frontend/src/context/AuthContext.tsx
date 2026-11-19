@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { STORAGE_KEYS } from "@/lib/constants";
+import { isCollegeEmail } from "@/lib/student";
 import type { Address, User } from "@/types/user";
 
 interface AuthResult {
@@ -17,15 +18,25 @@ interface AuthResult {
   error?: string;
 }
 
+interface SignupDetails {
+  fullName: string;
+  email: string;
+  phone: string;
+  interests: string[];
+}
+
 type EditableProfile = Pick<User, "fullName" | "phone" | "college">;
 
 interface AuthContextValue {
   user: User | null;
   isHydrated: boolean;
+  /** true when logged in with a college email (.edu, .ac.in …) */
+  isStudent: boolean;
   login: (email: string, remember: boolean) => Promise<AuthResult>;
-  signup: (fullName: string, email: string) => Promise<AuthResult>;
+  signup: (details: SignupDetails) => Promise<AuthResult>;
   logout: () => void;
   updateProfile: (data: Partial<EditableProfile>) => void;
+  updateInterests: (interests: string[]) => void;
   addAddress: (address: Omit<Address, "id" | "isDefault">) => void;
   removeAddress: (id: string) => void;
   setDefaultAddress: (id: string) => void;
@@ -47,16 +58,47 @@ function isUser(value: unknown): value is User {
   );
 }
 
+/** Older saved users may not have an interests list yet. */
+function normalizeUser(user: User): User {
+  return {
+    ...user,
+    interests: Array.isArray(user.interests)
+      ? user.interests.filter((i): i is string => typeof i === "string")
+      : [],
+  };
+}
+
+/** Mock "registered accounts" so a returning email gets its data back. */
+function readAccounts(): Record<string, User> {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.accounts);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+    const result: Record<string, User> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (isUser(value)) result[key] = normalizeUser(value);
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 function nameFromEmail(email: string): string {
   const local = email.split("@")[0] ?? "Student";
-  return local
-    .replace(/[._-]+/g, " ")
-    .replace(/\d+/g, "")
-    .trim()
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ") || "Student";
+  return (
+    local
+      .replace(/[._-]+/g, " ")
+      .replace(/\d+/g, "")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ") || "Student"
+  );
 }
 
 function createDemoUser(email: string): User {
@@ -66,7 +108,9 @@ function createDemoUser(email: string): User {
     fullName,
     email,
     phone: "9876543210",
+    phoneVerified: true,
     college: "Your College",
+    interests: [],
     addresses: [
       {
         id: "addr-hostel",
@@ -106,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (isUser(parsed)) {
-          setUser(parsed);
+          setUser(normalizeUser(parsed));
           setRemember(local !== null);
         }
       }
@@ -116,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, []);
 
+  // Keep the current session user saved.
   useEffect(() => {
     if (!isHydrated) return;
     try {
@@ -133,22 +178,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, remember, isHydrated]);
 
+  // Keep the mock "account" for this email up to date.
+  useEffect(() => {
+    if (!isHydrated || !user) return;
+    try {
+      const accounts = readAccounts();
+      accounts[user.email.toLowerCase()] = user;
+      window.localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(accounts));
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [user, isHydrated]);
+
   const login = useCallback(async (email: string, rememberMe: boolean) => {
     await wait(700); // pretend to talk to a server
+    const key = email.trim().toLowerCase();
+    const existing = readAccounts()[key];
     setRemember(rememberMe);
-    setUser(createDemoUser(email));
+    setUser(existing ?? createDemoUser(key));
     return { ok: true };
   }, []);
 
-  const signup = useCallback(async (fullName: string, email: string) => {
+  const signup = useCallback(async (details: SignupDetails) => {
     await wait(900);
     setRemember(true);
     setUser({
       id: `u-${Date.now()}`,
-      fullName,
-      email,
-      phone: "",
+      fullName: details.fullName,
+      email: details.email.trim().toLowerCase(),
+      phone: details.phone,
+      phoneVerified: true,
       college: "",
+      interests: details.interests,
       addresses: [],
     });
     return { ok: true };
@@ -158,6 +219,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback((data: Partial<EditableProfile>) => {
     setUser((prev) => (prev ? { ...prev, ...data } : prev));
+  }, []);
+
+  const updateInterests = useCallback((interests: string[]) => {
+    setUser((prev) => (prev ? { ...prev, interests } : prev));
   }, []);
 
   const addAddress = useCallback(
@@ -204,14 +269,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const isStudent = isHydrated && user !== null && isCollegeEmail(user.email);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       isHydrated,
+      isStudent,
       login,
       signup,
       logout,
       updateProfile,
+      updateInterests,
       addAddress,
       removeAddress,
       setDefaultAddress,
@@ -219,10 +288,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       user,
       isHydrated,
+      isStudent,
       login,
       signup,
       logout,
       updateProfile,
+      updateInterests,
       addAddress,
       removeAddress,
       setDefaultAddress,

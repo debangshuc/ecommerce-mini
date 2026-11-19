@@ -8,12 +8,13 @@ export const STORAGE_KEYS = {
   wishlist: "campuscart_wishlist",
   orders: "campuscart_orders",
   user: "campuscart_user",
+  accounts: "campuscart_accounts",
+  listings: "campuscart_listings",
 } as const;
 
 export const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop" },
-  { label: "Categories", href: "/shop#categories" },
+  { label: "Shop", href: "/" },
+  { label: "Buy & Sell", href: "/marketplace" },
   { label: "My Orders", href: "/orders" },
 ] as const;
 
