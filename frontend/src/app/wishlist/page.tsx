@@ -29,7 +29,7 @@ export default function WishlistPage() {
           title="Your wishlist is empty"
           description="Tap the heart on any product to save it here for later."
           actionLabel="Browse Products"
-          actionHref="/shop"
+          actionHref="/"
         />
       </div>
     );
@@ -44,7 +44,7 @@ export default function WishlistPage() {
             ({products.length})
           </span>
         </h1>
-        <Button href="/shop" variant="outline" size="sm">
+        <Button href="/" variant="outline" size="sm">
           Continue Shopping
         </Button>
       </div>

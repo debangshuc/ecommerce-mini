@@ -32,7 +32,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           title="Product not found"
           description="This product doesn't exist or may have been removed."
           actionLabel="Back to Shop"
-          actionHref="/shop"
+          actionHref="/#shop"
         />
       </div>
     );
@@ -45,20 +45,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
           <li>
-            <Link href="/" className="hover:text-lavender-700">
-              Home
-            </Link>
-          </li>
-          <ChevronRight size={14} aria-hidden="true" />
-          <li>
-            <Link href="/shop" className="hover:text-lavender-700">
+            <Link href="/#shop" className="hover:text-lavender-700">
               Shop
             </Link>
           </li>
           <ChevronRight size={14} aria-hidden="true" />
           <li>
             <Link
-              href={`/shop?category=${product.category}`}
+              href={`/?category=${product.category}#shop`}
               className="hover:text-lavender-700"
             >
               {getCategoryName(product.category)}

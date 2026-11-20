@@ -41,7 +41,7 @@ export function BundleBanner() {
             )}
           </p>
           <Button
-            href="/shop?category=student-kits"
+            href="/?category=student-kits#shop"
             variant="outline"
             size="lg"
             className="mt-8"

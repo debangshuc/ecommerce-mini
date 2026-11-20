@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { ProductImage } from "@/components/product/ProductImage";
 import { getProductsByIds } from "@/services/productService";
 import { FREE_DELIVERY_THRESHOLD } from "@/lib/constants";
+import { getStudentPrice } from "@/lib/student";
 import { cn, formatPrice } from "@/lib/utils";
 
 const highlights = [
@@ -13,6 +14,9 @@ const highlights = [
 
 export function HeroSection() {
   const collage = getProductsByIds(["1", "8", "18"]);
+  const kits = getProductsByIds(["24", "25"]);
+  const kitStudentPrice =
+    kits.length > 0 ? Math.min(...kits.map(getStudentPrice)) : null;
 
   return (
     <section className="container-page pt-6 lg:pt-10">
@@ -31,10 +35,14 @@ export function HeroSection() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button href="/shop" size="lg" rightIcon={<ArrowRight size={18} />}>
+            <Button href="/#shop" size="lg" rightIcon={<ArrowRight size={18} />}>
               Shop Now
             </Button>
-            <Button href="/shop?category=student-kits" size="lg" variant="outline">
+            <Button
+              href="/?category=student-kits#shop"
+              size="lg"
+              variant="outline"
+            >
               Explore Student Kits
             </Button>
           </div>
@@ -68,10 +76,16 @@ export function HeroSection() {
               />
             ))}
           </div>
-          <div className="absolute -bottom-3 left-4 rounded-2xl border border-line bg-white px-4 py-3 shadow-lift sm:left-8">
-            <p className="text-xs font-semibold text-ink-muted">Student kits from</p>
-            <p className="text-xl font-bold text-lavender-700">{formatPrice(799)}</p>
-          </div>
+          {kitStudentPrice !== null && (
+            <div className="absolute -bottom-3 left-4 rounded-2xl border border-line bg-white px-4 py-3 shadow-lift sm:left-8">
+              <p className="text-xs font-semibold text-ink-muted">
+                Student kits from
+              </p>
+              <p className="text-xl font-bold text-lavender-700">
+                {formatPrice(kitStudentPrice)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

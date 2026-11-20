@@ -1,23 +1,22 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { ShopContent } from "@/components/product/ShopContent";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Shop",
-  description: "Browse notebooks, pens, art supplies, calculators and student kits.",
-};
+interface ShopRedirectProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-export default function ShopPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="grid place-items-center py-32">
-          <LoadingSpinner size="lg" />
-        </div>
-      }
-    >
-      <ShopContent />
-    </Suspense>
-  );
+/** /shop no longer exists as a page: it forwards to the unified shop on "/". */
+export default async function ShopRedirect({ searchParams }: ShopRedirectProps) {
+  const params = await searchParams;
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") {
+      query.set(key, value);
+    } else if (Array.isArray(value)) {
+      value.forEach((item) => query.append(key, item));
+    }
+  }
+
+  const qs = query.toString();
+  redirect(`/${qs ? `?${qs}` : ""}#shop`);
 }

@@ -32,7 +32,7 @@ export default function OrdersPage() {
           title="No orders yet"
           description="When you place an order, it will show up here."
           actionLabel="Start Shopping"
-          actionHref="/shop"
+          actionHref="/"
         />
       </div>
     );
@@ -48,7 +48,7 @@ export default function OrdersPage() {
             history.
           </p>
         </div>
-        <Button href="/shop" variant="outline" size="sm">
+        <Button href="/" variant="outline" size="sm">
           Continue Shopping
         </Button>
       </div>

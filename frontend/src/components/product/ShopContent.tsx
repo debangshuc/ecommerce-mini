@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, SearchX, SlidersHorizontal } from "lucide-react";
-import { categories } from "@/data/categories";
+import { Search, SearchX, SlidersHorizontal, Sparkles } from "lucide-react";
+import { categories, getCategoryName } from "@/data/categories";
+import { getInterestScore } from "@/data/interests";
+import { useAuth } from "@/context/AuthContext";
 import { getAllProducts } from "@/services/productService";
+import { PLACEHOLDER_IMAGE } from "@/lib/constants";
 import { getUnitPrice } from "@/lib/utils";
-import type { SortOption } from "@/types/product";
+import type { Category, SortOption } from "@/types/product";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { CategoryCard } from "@/components/home/CategoryCard";
 import { ProductCard } from "@/components/product/ProductCard";
 import {
   DEFAULT_FILTERS,
@@ -24,6 +28,20 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "name-asc", label: "Name: A to Z" },
 ];
 
+const RECOMMENDED_OPTION: { value: SortOption; label: string } = {
+  value: "recommended",
+  label: "Recommended for you",
+};
+
+const ALL_TILE: Category = {
+  id: "all",
+  name: "All Products",
+  slug: "all",
+  description: "Everything in the store",
+  image: categories[0]?.image ?? PLACEHOLDER_IMAGE,
+  accent: "lavender",
+};
+
 function resolveCategory(slug: string | null): string {
   return slug && categories.some((c) => c.slug === slug) ? slug : "all";
 }
@@ -31,19 +49,22 @@ function resolveCategory(slug: string | null): string {
 export function ShopContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, isStudent } = useAuth();
+
   const urlQuery = searchParams.get("q") ?? "";
   const urlCategory = resolveCategory(searchParams.get("category"));
 
   const allProducts = useMemo(() => getAllProducts(), []);
+  const interests = useMemo(() => user?.interests ?? [], [user]);
+  const hasInterests = interests.length > 0;
 
   const [query, setQuery] = useState(urlQuery);
-  const [filters, setFilters] = useState<FilterState>({
-    ...DEFAULT_FILTERS,
-    category: urlCategory,
-  });
+  const [category, setCategory] = useState(urlCategory);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortOption>("popularity");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const sortTouched = useRef(false);
 
   // Brief fake loading so the loading state is visible in demos.
   useEffect(() => {
@@ -51,11 +72,21 @@ export function ShopContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Follow changes made from outside (navbar search, footer category links).
+  // Follow changes made from outside (navbar search, footer links, hero buttons).
   useEffect(() => {
     setQuery(urlQuery);
-    setFilters((prev) => ({ ...prev, category: urlCategory }));
+    setCategory(urlCategory);
   }, [urlQuery, urlCategory]);
+
+  // Default to "Recommended" once we know the user has interests.
+  useEffect(() => {
+    if (hasInterests && !sortTouched.current) {
+      setSort("recommended");
+    }
+    if (!hasInterests) {
+      setSort((prev) => (prev === "recommended" ? "popularity" : prev));
+    }
+  }, [hasInterests]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -71,10 +102,8 @@ export function ShopContent() {
     const max = filters.maxPrice === "" ? null : Number(filters.maxPrice);
 
     const filtered = allProducts.filter((product) => {
-      const price = getUnitPrice(product);
-      if (filters.category !== "all" && product.category !== filters.category) {
-        return false;
-      }
+      const price = getUnitPrice(product, isStudent);
+      if (category !== "all" && product.category !== category) return false;
       if (min !== null && !Number.isNaN(min) && price < min) return false;
       if (max !== null && !Number.isNaN(max) && price > max) return false;
       if (filters.inStockOnly && product.stock <= 0) return false;
@@ -92,66 +121,100 @@ export function ShopContent() {
       return true;
     });
 
+    const byPopularity = (a: (typeof filtered)[number], b: (typeof filtered)[number]) =>
+      (b.popularity ?? 0) - (a.popularity ?? 0);
+
     return [...filtered].sort((a, b) => {
       switch (sort) {
+        case "recommended":
+          return (
+            getInterestScore(b.category, interests) -
+              getInterestScore(a.category, interests) || byPopularity(a, b)
+          );
         case "price-asc":
-          return getUnitPrice(a) - getUnitPrice(b);
+          return getUnitPrice(a, isStudent) - getUnitPrice(b, isStudent);
         case "price-desc":
-          return getUnitPrice(b) - getUnitPrice(a);
+          return getUnitPrice(b, isStudent) - getUnitPrice(a, isStudent);
         case "name-asc":
           return a.name.localeCompare(b.name);
         case "popularity":
         default:
-          return (b.popularity ?? 0) - (a.popularity ?? 0);
+          return byPopularity(a, b);
       }
     });
-  }, [allProducts, query, filters, sort]);
+  }, [allProducts, query, category, filters, sort, isStudent, interests]);
 
   const activeFilterCount =
-    (filters.category !== "all" ? 1 : 0) +
     (filters.minPrice !== "" || filters.maxPrice !== "" ? 1 : 0) +
     (filters.inStockOnly ? 1 : 0);
 
-  const updateCategoryParam = (category: string) => {
+  const handleCategorySelect = (slug: string) => {
+    setCategory(slug);
     const params = new URLSearchParams(searchParams.toString());
-    if (category === "all") params.delete("category");
-    else params.set("category", category);
+    if (slug === "all") params.delete("category");
+    else params.set("category", slug);
     const qs = params.toString();
-    router.replace(qs ? `/shop?${qs}` : "/shop", { scroll: false });
+    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
   };
 
-  const handleFiltersChange = (next: FilterState) => {
-    setFilters(next);
-    if (next.category !== filters.category) updateCategoryParam(next.category);
+  const handleSortChange = (value: SortOption) => {
+    sortTouched.current = true;
+    setSort(value);
   };
 
   const handleClear = () => {
     setQuery("");
+    setCategory("all");
     setFilters(DEFAULT_FILTERS);
-    router.replace("/shop", { scroll: false });
+    router.replace("/", { scroll: false });
   };
 
+  const sortOptions = hasInterests
+    ? [RECOMMENDED_OPTION, ...SORT_OPTIONS]
+    : SORT_OPTIONS;
+
   const filterPanel = (
-    <FilterPanel
-      filters={filters}
-      onChange={handleFiltersChange}
-      onClear={handleClear}
-      categoryCounts={categoryCounts}
-      totalCount={allProducts.length}
-    />
+    <FilterPanel filters={filters} onChange={setFilters} onClear={handleClear} />
   );
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <div className="container-page py-12 lg:py-16">
       <header>
-        <h1 className="text-3xl font-bold sm:text-4xl">Shop All Stationery</h1>
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-lavender-600">
+          Shop
+        </p>
+        <h2 className="text-3xl font-bold sm:text-4xl">Shop All Stationery</h2>
         <p className="mt-2 max-w-2xl text-ink-soft">
-          Notebooks, pens, art supplies, calculators and more. Search, filter
-          and sort to find exactly what your semester needs.
+          Pick a category, search, and filter or sort to find exactly what your
+          semester needs.
         </p>
       </header>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Category tiles = category filters */}
+      <div
+        role="group"
+        aria-label="Filter by category"
+        className="no-scrollbar -mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0"
+      >
+        <CategoryCard
+          category={ALL_TILE}
+          productCount={allProducts.length}
+          active={category === "all"}
+          onSelect={handleCategorySelect}
+        />
+        {categories.map((item) => (
+          <CategoryCard
+            key={item.id}
+            category={item}
+            productCount={categoryCounts[item.slug] ?? 0}
+            active={category === item.slug}
+            onSelect={handleCategorySelect}
+          />
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search
             size={18}
@@ -178,11 +241,11 @@ export function ShopContent() {
           </Button>
           <select
             value={sort}
-            onChange={(event) => setSort(event.target.value as SortOption)}
+            onChange={(event) => handleSortChange(event.target.value as SortOption)}
             aria-label="Sort products"
             className="h-12 flex-1 rounded-full border border-line bg-white px-4 text-sm font-medium focus:border-lavender-400 focus:outline-none focus:ring-4 focus:ring-lavender-100 sm:flex-none"
           >
-            {SORT_OPTIONS.map((option) => (
+            {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -208,7 +271,7 @@ export function ShopContent() {
               <span className="grid h-20 w-20 place-items-center rounded-full bg-lavender-100 text-lavender-600">
                 <SearchX size={36} strokeWidth={1.6} />
               </span>
-              <h2 className="mt-6 text-2xl font-bold">No products found</h2>
+              <h3 className="mt-6 text-2xl font-bold">No products found</h3>
               <p className="mt-2 text-ink-soft">
                 We couldn&apos;t find anything matching your search and filters.
                 Try different keywords or clear the filters.
@@ -219,11 +282,19 @@ export function ShopContent() {
             </div>
           ) : (
             <>
-              <p className="mb-5 text-sm text-ink-soft" aria-live="polite">
-                Showing{" "}
-                <strong className="text-ink">{visibleProducts.length}</strong> of{" "}
-                {allProducts.length} products
-              </p>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-ink-soft" aria-live="polite">
+                  Showing{" "}
+                  <strong className="text-ink">{visibleProducts.length}</strong>{" "}
+                  of {allProducts.length} products
+                  {category !== "all" && <> in {getCategoryName(category)}</>}
+                </p>
+                {sort === "recommended" && (
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-lavender-700">
+                    <Sparkles size={14} /> Sorted by your interests
+                  </p>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-3">
                 {visibleProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />

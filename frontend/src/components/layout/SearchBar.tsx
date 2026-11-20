@@ -22,7 +22,7 @@ export function SearchBar({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = query.trim();
-    router.push(trimmed ? `/shop?q=${encodeURIComponent(trimmed)}` : "/shop");
+    router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}#shop` : "/#shop");
     onSearch?.();
   };
 

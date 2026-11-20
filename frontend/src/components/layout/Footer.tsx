@@ -4,6 +4,7 @@ import { Mail, MapPin } from "lucide-react";
 import { categories } from "@/data/categories";
 
 const accountLinks = [
+  { label: "Buy & Sell", href: "/marketplace" },
   { label: "My Orders", href: "/orders" },
   { label: "Wishlist", href: "/wishlist" },
   { label: "Shopping Cart", href: "/cart" },
@@ -47,14 +48,14 @@ export function Footer() {
           </h2>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
-              <Link href="/shop" className="text-ink-soft hover:text-lavender-700">
+              <Link href="/#shop" className="text-ink-soft hover:text-lavender-700">
                 All Products
               </Link>
             </li>
             {categories.slice(0, 6).map((category) => (
               <li key={category.id}>
                 <Link
-                  href={`/shop?category=${category.slug}`}
+                  href={`/?category=${category.slug}#shop`}
                   className="text-ink-soft hover:text-lavender-700"
                 >
                   {category.name}
@@ -72,7 +73,7 @@ export function Footer() {
             {categories.slice(6).map((category) => (
               <li key={category.id}>
                 <Link
-                  href={`/shop?category=${category.slug}`}
+                  href={`/?category=${category.slug}#shop`}
                   className="text-ink-soft hover:text-lavender-700"
                 >
                   {category.name}

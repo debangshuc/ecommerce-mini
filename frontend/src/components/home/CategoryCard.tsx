@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+"use client";
+
 import type { Category } from "@/types/product";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "@/components/product/ProductImage";
@@ -7,6 +7,8 @@ import { ProductImage } from "@/components/product/ProductImage";
 interface CategoryCardProps {
   category: Category;
   productCount?: number;
+  active?: boolean;
+  onSelect: (slug: string) => void;
 }
 
 const accentBackgrounds: Record<Category["accent"], string> = {
@@ -16,41 +18,41 @@ const accentBackgrounds: Record<Category["accent"], string> = {
   mint: "bg-mint-100",
 };
 
-export function CategoryCard({ category, productCount }: CategoryCardProps) {
+export function CategoryCard({
+  category,
+  productCount,
+  active = false,
+  onSelect,
+}: CategoryCardProps) {
   return (
-    <Link
-      href={`/shop?category=${category.slug}`}
-      className="group block"
-      aria-label={`Browse ${category.name}`}
+    <button
+      type="button"
+      onClick={() => onSelect(category.slug)}
+      aria-pressed={active}
+      aria-label={`Show ${category.name}`}
+      className={cn(
+        "group w-32 shrink-0 snap-start rounded-2xl p-2 text-left transition-all duration-200 sm:w-36",
+        accentBackgrounds[category.accent],
+        active
+          ? "shadow-lift ring-2 ring-lavender-500"
+          : "hover:-translate-y-0.5 hover:shadow-soft"
+      )}
     >
-      <div
-        className={cn(
-          "rounded-card p-3 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lift",
-          accentBackgrounds[category.accent]
-        )}
-      >
-        <ProductImage
-          src={category.image}
-          alt={category.name}
-          className="aspect-square w-full rounded-2xl"
-          imageClassName="transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 16vw"
-        />
-        <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-ink">{category.name}</p>
-            {productCount !== undefined && (
-              <p className="text-xs text-ink-soft">
-                {productCount} {productCount === 1 ? "item" : "items"}
-              </p>
-            )}
-          </div>
-          <ArrowUpRight
-            size={18}
-            className="shrink-0 text-ink-soft transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-          />
-        </div>
-      </div>
-    </Link>
+      <ProductImage
+        src={category.image}
+        alt=""
+        className="aspect-square w-full rounded-xl"
+        imageClassName="transition-transform duration-500 group-hover:scale-105"
+        sizes="144px"
+      />
+      <p className="mt-2 line-clamp-2 min-h-[2.5rem] px-1 text-xs font-bold leading-snug text-ink">
+        {category.name}
+      </p>
+      {productCount !== undefined && (
+        <p className="px-1 pb-1 text-[11px] text-ink-soft">
+          {productCount} {productCount === 1 ? "item" : "items"}
+        </p>
+      )}
+    </button>
   );
 }

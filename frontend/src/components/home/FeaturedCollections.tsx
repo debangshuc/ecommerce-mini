@@ -51,7 +51,7 @@ export function FeaturedCollections() {
           return (
             <Link
               key={slug}
-              href={`/shop?category=${slug}`}
+              href={`/?category=${slug}#shop`}
               className={`group overflow-hidden rounded-3xl ${tone} transition-all duration-300 hover:-translate-y-1 hover:shadow-lift`}
             >
               <ProductImage
